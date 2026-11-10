@@ -11,13 +11,13 @@ CONNECTIONS_PATH=$HOME/$CONNECTIONS
 TEST_IP=1.1.1.1
 VPN_IP=10.0.3.1
 
-function test_sudo {
-    if [ `whoami` != root  ]; then
-        echo "run on sudo"
 
-        exit 1
-    fi
-}
+if [ $(whoami) != root  ]; then
+    echo "run on sudo"
+
+    exit 1
+fi
+
 
 function test_interface {
     ip link show $1 &> /dev/null || return 1
@@ -26,7 +26,7 @@ function test_interface {
 }
 
 function test_ip {
-    ip=`ip -4 -br addr show | grep -w $1 | awk '{print $3}'`
+    ip=$(ip -4 -br addr show dev "$1" | awk '{print $3}')
 
     if [ -z "$ip" ]; then
         return 1
@@ -47,7 +47,7 @@ function test_vpn {
 
     while [ $try -lt 3 ] && [[ "$ip" != $VPN_IP ]]
     do
-        ip=`traceroute -w 1 -m 1 $TEST_IP | tail -1 | awk '{print $2}'`
+        ip=$(traceroute -w 1 -m 1 $TEST_IP | tail -1 | awk '{print $2}')
         ((try++))
     done
 
@@ -64,7 +64,7 @@ function test_wifi {
 
     while [ $try -lt 10 ] && [ -z "$ssid" ]
     do
-        ssid=`iw dev $WIFI_INT link | grep SSID | awk '{print $2}'`
+        ssid=$(iw dev $WIFI_INT link | grep SSID | awk '{print $2}')
         ((try++))
         sleep 1
     done
@@ -97,8 +97,10 @@ function mac_change {
 case $1 in
     "wire")
 
-        test_sudo
-        ! test_interface $WIRE_INT && echo "interface $WIRE_INT does not exit" && exit 1
+        if ! test_interface $WIRE_INT; then
+            echo "interface $WIRE_INT does not exist"
+            exit 1
+        fi
 
         case $2 in
             "c")
@@ -134,8 +136,10 @@ case $1 in
 
     "wifi")
 
-        test_sudo
-        ! test_interface $WIFI_INT && echo "interface $WIFI_INT does not exit" && exit 1
+        if ! test_interface $WIFI_INT; then
+            echo "interface $WIFI_INT does not exist"
+            exit 1
+        fi
 
         case $2 in
             "c")
