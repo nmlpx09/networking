@@ -12,19 +12,20 @@ TEST_IP=1.1.1.1
 VPN_IP=10.0.3.1
 USE_MACCHANGER=0
 
-if [ $(whoami) != root  ]; then
+if [ "$(whoami)" != root  ]; then
     echo "run on sudo"
 
     exit 1
 fi
 
 test_interface() {
-    ip link show $1 > /dev/null || return 1
+    ip link show "$1" > /dev/null || return 1
 
     return 0
 }
 
 test_ip() {
+    local ip
     ip=$(ip -4 -br addr show dev "$1" | awk '{print $3}')
 
     if [ -z "$ip" ]; then
@@ -35,22 +36,23 @@ test_ip() {
 }
 
 test_connect() {
-    traceroute -w 1 -m 1 $TEST_IP > /dev/null || return 1
+    traceroute -w 1 -m 1 "$TEST_IP" > /dev/null || return 1
 
     return 0
 }
 
 test_vpn() {
 
-    try=0
+    local try=0
+    local ip
 
-    while [ $try -lt 3 ] && [[ "$ip" != $VPN_IP ]]
+    while [ "$try" -lt 3 ] && [[ "$ip" != "$VPN_IP" ]]
     do
-        ip=$(traceroute -w 1 -m 1 $TEST_IP | tail -1 | awk '{print $2}')
-        ((try++))
+        ip=$(traceroute -w 1 -m 1 "$TEST_IP" | tail -1 | awk '{print $2}')
+        try=$((try + 1))
     done
 
-    if [[ $ip == "$VPN_IP" ]]; then
+    if [[ "$ip" == "$VPN_IP" ]]; then
         return 0
     fi
 
@@ -59,11 +61,12 @@ test_vpn() {
 
 test_wifi() {
 
-    try=0
+    local try=0
+    local ssid
 
-    while [ $try -lt 10 ] && [ -z "$ssid" ]
+    while [ "$try" -lt 10 ] && [ -z "$ssid" ]
     do
-        ssid=$(iw dev $WIFI_INT link | grep SSID | awk '{print $2}')
+        ssid=$(iw dev "$WIFI_INT" link | grep SSID | awk '{print $2}')
         ((try++))
         sleep 1
     done
@@ -88,33 +91,39 @@ wifi_disconnect() {
 mac_change() {
     [ "$USE_MACCHANGER" != 1 ] && return 0
 
-    ip link set $1 down
+    ip link set "$1" down
 
-    macchanger -r $1 > /dev/null
+    macchanger -r "$1" > /dev/null
 
-    ip link set $1 up
+    ip link set "$1" up
 }
 
 case $1 in
     "wire")
 
-        if ! test_interface $WIRE_INT; then
+        if ! test_interface "$WIRE_INT"; then
             echo "interface $WIRE_INT does not exist"
             exit 1
         fi
 
         case $2 in
             "c")
-                
-                test_ip $WIRE_INT && echo "wire connect on $WIRE_INT" && exit 0
+                if test_ip "$WIRE_INT"; then
+                    echo "wire connect on $WIRE_INT"
+                    exit 0
+                fi
 
                 echo "wire connect on $WIRE_INT"
 
-                mac_change $WIRE_INT
+                mac_change "$WIRE_INT"
 
-                dhclient $WIRE_INT
+                dhclient "$WIRE_INT"
 
-                ! test_ip $WIRE_INT && echo "does not set ip" && exit 1
+                if ! test_ip "$WIRE_INT"; then
+                    echo "does not set ip"
+                    exit 1
+                fi
+
                 ;;
             
             "d")
@@ -137,7 +146,7 @@ case $1 in
 
     "wifi")
 
-        if ! test_interface $WIFI_INT; then
+        if ! test_interface "$WIFI_INT"; then
             echo "interface $WIFI_INT does not exist"
             exit 1
         fi
@@ -145,32 +154,41 @@ case $1 in
         case $2 in
             "c")
 
-                test_ip $WIFI_INT && echo "wifi connect on $WIFI_INT" && exit 0
+                if test_ip "$WIFI_INT"; then
+                    echo "wifi connect on $WIFI_INT"
+                    exit 0
+                fi
 
                 if [ "$#" -ne 3 ]; then
-                    con=$WIFI_CON
+                    con="$WIFI_CON"
                 else
-                    con=$3
+                    con="$3"
                 fi
 
                 echo "wifi connect $con on $WIFI_INT"
 
-                config=$CONNECTIONS_PATH/${con}.conf
+                config="$CONNECTIONS_PATH/${con}.conf"
 
                 if [ ! -f "$config" ]; then
                     echo "config $config does not exist"
                     exit 1
                 fi
             
-                mac_change $WIFI_INT
+                mac_change "$WIFI_INT"
 
-                wpa_supplicant -B -i $WIFI_INT -c "$config" > /dev/null
+                wpa_supplicant -B -i "$WIFI_INT" -c "$config" > /dev/null
 
-                ! test_wifi $con && echo "does not set connection to $con" && exit 1
+                if ! test_wifi "$con"; then
+                    echo "does not set connection to $con"
+                    exit 1
+                fi
 
-                dhclient $WIFI_INT
+                dhclient "$WIFI_INT"
 
-                ! test_ip $WIFI_INT && echo "does not set ip" && exit 1
+                if ! test_ip "$WIFI_INT"; then
+                    echo "does not set ip"
+                    exit 1
+                fi
 
                 ;;
             
@@ -191,7 +209,7 @@ case $1 in
                     exit 1
                 fi
 
-                wpa_passphrase $3 $4 > $CONNECTIONS_PATH/${3}.conf
+                wpa_passphrase "$3" "$4" > "$CONNECTIONS_PATH/${3}.conf"
 
                 ;;
 
@@ -223,7 +241,7 @@ case $1 in
 
         ! test_connect && echo "-" && exit 0
         
-        ping -q -c 10 $TEST_IP | awk 'FNR == 4{print $6}FNR == 5{print $4}' | awk 'BEGIN {RS=""}{gsub(/\n|\//," ",$0);print $1,$4}'
+        ping -q -c 10 "$TEST_IP" | awk 'FNR == 4{print $6}FNR == 5{print $4}' | awk 'BEGIN {RS=""}{gsub(/\n|\//," ",$0);print $1,$4}'
 
         ;;
     *)
