@@ -1,5 +1,13 @@
 # networking
 
+# requirements
+1. isc-dhcp-server
+2. systemd-resolved
+3. systemd-timesyncd
+4. wpasupplicant
+5. iw
+6. 
+
 # configs
 
 1. /etc/network/interfaces
