@@ -14,3 +14,4 @@
 2. /etc/dhcp/dhclient.conf
 3. /etc/systemd/timesyncd.conf
 4. /etc/systemd/resolved.conf
+5. /net/net.conf              # net script config (see configs/net.conf template)

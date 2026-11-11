@@ -2,17 +2,18 @@
 
 set -ex
 
-HOME=/net
-WIRE_INT=enp2s0
-WIFI_INT=wlo1
-WIFI_CON=hidden2
-CONNECTIONS=connections
-CONNECTIONS_PATH=$HOME/$CONNECTIONS
-TEST_IP=1.1.1.1
-VPN_IP=10.0.3.1
-USE_MACCHANGER=0
+CONFIG_FILE="${NET_CONF:-/net/net.conf}"
 
-if [ "$(whoami)" != root  ]; then
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "config $CONFIG_FILE does not exist"
+    exit 1
+fi
+
+. "$CONFIG_FILE"
+
+CONNECTIONS_PATH="$NET_HOME/$CONNECTIONS"
+
+if [ "$EUID" != 0 ]; then
     echo "run on sudo"
 
     exit 1
@@ -46,13 +47,13 @@ test_vpn() {
     local try=0
     local ip
 
-    while [ "$try" -lt 3 ] && [[ "$ip" != "$VPN_IP" ]]
+    while [ "$try" -lt 3 ] && [ "$ip" != "$VPN_IP" ]
     do
         ip=$(traceroute -w 1 -m 1 "$TEST_IP" | tail -1 | awk '{print $2}')
         try=$((try + 1))
     done
 
-    if [[ "$ip" == "$VPN_IP" ]]; then
+    if [ "$ip" == "$VPN_IP" ]; then
         return 0
     fi
 
@@ -115,7 +116,9 @@ case $1 in
 
                 echo "wire connect on $WIRE_INT"
 
-                mac_change "$WIRE_INT"
+                if [ "$USE_MACCHANGER" != 1 ]; then
+                    mac_change "$WIRE_INT"
+                fi
 
                 dhclient "$WIRE_INT"
 
@@ -229,17 +232,26 @@ case $1 in
         ;;
 
     "status")
-        
-        ! test_connect && echo "n" && exit 0
 
-        ! test_vpn && echo "c" && exit 0
+        if ! test_connect; then
+            echo "n"
+            exit 0
+        fi
+
+        if ! test_vpn; then
+            echo "c"
+            exit 0
+        fi
 
         echo "v"
 
         ;;
     "stats")
 
-        ! test_connect && echo "-" && exit 0
+        if ! test_connect; then
+            echo "-"
+            exit 0
+        fi
         
         ping -q -c 10 "$TEST_IP" | awk 'FNR == 4{print $6}FNR == 5{print $4}' | awk 'BEGIN {RS=""}{gsub(/\n|\//," ",$0);print $1,$4}'
 
