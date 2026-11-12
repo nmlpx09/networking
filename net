@@ -45,7 +45,6 @@ test_connect() {
 }
 
 test_vpn() {
-
     local try=0
     local ip
 
@@ -63,7 +62,6 @@ test_vpn() {
 }
 
 test_wifi() {
-
     local try=0
     local ssid
 
@@ -268,6 +266,7 @@ case $1 in
         echo "v"
 
         ;;
+
     "stats")
 
         if ! test_connect; then
