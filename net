@@ -69,7 +69,7 @@ test_wifi() {
 
     while [ "$try" -lt 10 ] && [ -z "$ssid" ]
     do
-        ssid=$(iw dev "$WIFI_INT" link | grep SSID | awk '{print $2}')
+        ssid=$(iw dev wlo1 link | awk '/SSID:/ {print $2; exit}')
         try=$((try + 1))
         sleep 1
     done
@@ -82,13 +82,13 @@ test_wifi() {
 }
 
 wire_disconnect() {
-    dhclient -r "$1" > /dev/null
+    dhclient -r "$1" &> /dev/null
 }
 
 wifi_disconnect() {
     pkill -f "wpa_supplicant.*$1"
 
-    dhclient -r "$1" > /dev/null
+    dhclient -r "$1" &> /dev/null
 }
 
 mac_change() {
@@ -240,7 +240,7 @@ case $1 in
                 
                 echo "wifi list ssid"
 
-                iwlist scan |& awk -F '["]' '/ESSID:/ {print $2}' | sort -u
+                iwlist scan |& awk -F '"' '/ESSID:"[^"]+"/ {print $2}' | sort -u
 
                 ;;
             
