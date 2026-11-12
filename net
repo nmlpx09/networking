@@ -13,11 +13,13 @@ fi
 
 CONNECTIONS_PATH="$NET_HOME/$CONNECTIONS"
 
-if [ "$EUID" != 0 ]; then
-    echo "run on sudo"
+test_root() {
+    if [ "$EUID" != 0 ]; then
+        exit 1
+    fi
 
-    exit 1
-fi
+    return 0
+}
 
 test_interface() {
     ip link show "$1" > /dev/null || return 1
@@ -37,7 +39,7 @@ test_ip() {
 }
 
 test_connect() {
-    traceroute -w 1 -m 1 "$TEST_IP" > /dev/null || return 1
+    ping -c 1 -W 1 "$TEST_IP" &> /dev/null || return 1
 
     return 0
 }
@@ -53,7 +55,7 @@ test_vpn() {
         try=$((try + 1))
     done
 
-    if [ "$ip" == "$VPN_IP" ]; then
+    if [ "$ip" = "$VPN_IP" ]; then
         return 0
     fi
 
@@ -68,7 +70,7 @@ test_wifi() {
     while [ "$try" -lt 10 ] && [ -z "$ssid" ]
     do
         ssid=$(iw dev "$WIFI_INT" link | grep SSID | awk '{print $2}')
-        ((try++))
+        try=$((try + 1))
         sleep 1
     done
 
@@ -99,8 +101,17 @@ mac_change() {
     ip link set "$1" up
 }
 
+sanitize_ssid() {
+    printf '%s' "$1" | tr -c 'A-Za-z0-9 _-' '_'
+}
+
 case $1 in
     "wire")
+
+        if ! test_root; then
+            echo "run as root"
+            exit 1
+        fi
 
         if ! test_interface "$WIRE_INT"; then
             echo "interface $WIRE_INT does not exist"
@@ -148,6 +159,10 @@ case $1 in
         ;;
 
     "wifi")
+        if ! test_root; then
+            echo "run as root"
+            exit 1
+        fi
 
         if ! test_interface "$WIFI_INT"; then
             echo "interface $WIFI_INT does not exist"
@@ -168,9 +183,11 @@ case $1 in
                     con="$3"
                 fi
 
+                safe=$(sanitize_ssid "$con")
+
                 echo "wifi connect $con on $WIFI_INT"
 
-                config="$CONNECTIONS_PATH/${con}.conf"
+                config="$CONNECTIONS_PATH/${safe}.conf"
 
                 if [ ! -f "$config" ]; then
                     echo "config $config does not exist"
@@ -207,12 +224,15 @@ case $1 in
             "w")
 
                 if [ "$#" -ne 4 ]; then
-                    echo "net w sid pwd"
+                    echo "net wifi w <ssid> <password>" >&2
 
                     exit 1
                 fi
 
-                wpa_passphrase "$3" "$4" > "$CONNECTIONS_PATH/${3}.conf"
+                safe=$(sanitize_ssid "$3")
+
+                wpa_passphrase "$3" "$4" | grep -v -E '^[[:space:]]*#psk=' > "$CONNECTIONS_PATH/${safe}.conf"
+                chmod 600 "$CONNECTIONS_PATH/${safe}.conf"
 
                 ;;
 
@@ -220,7 +240,7 @@ case $1 in
                 
                 echo "wifi list ssid"
 
-                iwlist scan |& grep -oP '(?<=ESSID:)[^\n]+' | tr -d '"' | sort -r
+                iwlist scan |& awk -F '["]' '/ESSID:/ {print $2}' | sort -u
 
                 ;;
             
@@ -252,8 +272,8 @@ case $1 in
             echo "-"
             exit 0
         fi
-        
-        ping -q -c 10 "$TEST_IP" | awk 'FNR == 4{print $6}FNR == 5{print $4}' | awk 'BEGIN {RS=""}{gsub(/\n|\//," ",$0);print $1,$4}'
+
+        ping -q -c 10 "$TEST_IP" | awk -F '[ /]' '/loss/ {loss=$6} /rtt/ {avg=$8} END {print loss,avg}'
 
         ;;
     *)
