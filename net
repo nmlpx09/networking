@@ -69,12 +69,12 @@ test_wifi() {
 
     while [ "$try" -lt 10 ] && [ -z "$ssid" ]
     do
-        ssid=$(iw dev wlo1 link | awk '/SSID:/ {print $2; exit}')
+        ssid=$(iw dev "$1" link | awk '/SSID:/ {print $2; exit}')
         try=$((try + 1))
         sleep 1
     done
 
-    if [ -z "$ssid" ] || [ "$ssid" != "$1" ]; then
+    if [ -z "$ssid" ] || [ "$ssid" != "$2" ]; then
         return 1
     fi
 
@@ -198,7 +198,7 @@ case $1 in
 
                 wpa_supplicant -B -i "$WIFI_INT" -c "$config" > /dev/null
 
-                if ! test_wifi "$con"; then
+                if ! test_wifi "$WIFI_INT" "$con"; then
                     echo "does not set connection to $con"
                     exit 1
                 fi
@@ -242,7 +242,7 @@ case $1 in
                 
                 echo "wifi list ssid"
 
-                iwlist scan |& awk -F '"' '/ESSID:"[^"]+"/ {print $2}' | sort -u
+                iwlist scan 2> /dev/null | awk -F '"' '/ESSID:"[^"]+"/ {print $2}' | sort -u
 
                 ;;
             
