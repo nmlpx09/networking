@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 CONFIG_FILE="${NET_CONF:-/net/net.conf}"
 
@@ -209,6 +209,8 @@ case $1 in
                     echo "does not set ip"
                     exit 1
                 fi
+
+                echo "wifi connect done"
 
                 ;;
             
