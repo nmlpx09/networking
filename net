@@ -5,7 +5,7 @@ set -e
 CONFIG_FILE="${NET_CONF:-/net/net.conf}"
 
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "config $CONFIG_FILE does not exist"
+    echo "config $CONFIG_FILE does not exist" >&2
     exit 1
 fi
 
@@ -15,7 +15,7 @@ CONNECTIONS_PATH="$NET_HOME/$CONNECTIONS"
 
 test_root() {
     if [ "$EUID" != 0 ]; then
-        exit 1
+        return 1
     fi
 
     return 0
@@ -105,12 +105,12 @@ case $1 in
     "wire")
 
         if ! test_root; then
-            echo "run as root"
+            echo "run as root" >&2
             exit 1
         fi
 
         if ! test_interface "$WIRE_INT"; then
-            echo "interface $WIRE_INT does not exist"
+            echo "interface $WIRE_INT does not exist" >&2
             exit 1
         fi
 
@@ -130,7 +130,7 @@ case $1 in
                 dhclient "$WIRE_INT"
 
                 if ! test_ip "$WIRE_INT"; then
-                    echo "does not set ip"
+                    echo "does not set ip" >&2
                     exit 1
                 fi
 
@@ -156,12 +156,12 @@ case $1 in
 
     "wifi")
         if ! test_root; then
-            echo "run as root"
+            echo "run as root" >&2
             exit 1
         fi
 
         if ! test_interface "$WIFI_INT"; then
-            echo "interface $WIFI_INT does not exist"
+            echo "interface $WIFI_INT does not exist" >&2
             exit 1
         fi
 
@@ -186,7 +186,7 @@ case $1 in
                 config="$CONNECTIONS_PATH/${safe}.conf"
 
                 if [ ! -f "$config" ]; then
-                    echo "config $config does not exist"
+                    echo "config $config does not exist" >&2
                     exit 1
                 fi
 
@@ -197,14 +197,14 @@ case $1 in
                 wpa_supplicant -B -i "$WIFI_INT" -c "$config" > /dev/null
 
                 if ! test_wifi "$WIFI_INT" "$con"; then
-                    echo "does not set connection to $con"
+                    echo "does not set connection to $con" >&2
                     exit 1
                 fi
 
                 dhclient "$WIFI_INT"
 
                 if ! test_ip "$WIFI_INT"; then
-                    echo "does not set ip"
+                    echo "does not set ip" >&2
                     exit 1
                 fi
 
