@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
 CONFIG_FILE="${NET_CONF:-/net/net.conf}"
 
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "config $CONFIG_FILE does not exist" > /dev/stderr
+    echo "config $CONFIG_FILE does not exist" >&2
     exit 1
 fi
 
@@ -14,7 +14,7 @@ fi
 CONNECTIONS_PATH="$NET_HOME/$CONNECTIONS"
 
 test_root() {
-    if [ "$EUID" != 0 ]; then
+    if [ $(id -u) -ne 0 ]; then
         return 1
     fi
 
@@ -28,7 +28,6 @@ test_interface() {
 }
 
 test_ip() {
-    local ip
     ip=$(ip -4 -br addr show dev "$1" | awk '{print $3}')
 
     if [ -z "$ip" ]; then
@@ -39,14 +38,13 @@ test_ip() {
 }
 
 test_connect() {
-    ping -c 1 -W 1 "$TEST_IP" &> /dev/null || return 1
+    ping -c 1 -W 1 "$TEST_IP" > /dev/null 2>&1 || return 1
 
     return 0
 }
 
 test_vpn() {
-    local try=0
-    local ip
+    try=0
 
     while [ "$try" -lt 3 ] && [ "$ip" != "$VPN_IP" ]
     do
@@ -62,8 +60,7 @@ test_vpn() {
 }
 
 test_wifi() {
-    local try=0
-    local ssid
+    try=0
 
     while [ "$try" -lt 10 ] && [ -z "$ssid" ]
     do
@@ -80,13 +77,13 @@ test_wifi() {
 }
 
 wire_disconnect() {
-    dhclient -r "$1" &> /dev/null
+    dhclient -r "$1" > /dev/null 2>&1
 }
 
 wifi_disconnect() {
     pkill -f "wpa_supplicant.*$1"
 
-    dhclient -r "$1" &> /dev/null
+    dhclient -r "$1" > /dev/null 2>&1
 }
 
 mac_change() {
@@ -105,12 +102,12 @@ case $1 in
     "wire")
 
         if ! test_root; then
-            echo "run as root" > /dev/stderr
+            echo "run as root" >&2
             exit 1
         fi
 
         if ! test_interface "$WIRE_INT"; then
-            echo "interface $WIRE_INT does not exist" > /dev/stderr
+            echo "interface $WIRE_INT does not exist" >&2
             exit 1
         fi
 
@@ -130,7 +127,7 @@ case $1 in
                 dhclient "$WIRE_INT"
 
                 if ! test_ip "$WIRE_INT"; then
-                    echo "does not set ip" > /dev/stderr
+                    echo "does not set ip" >&2
                     exit 1
                 fi
 
@@ -156,12 +153,12 @@ case $1 in
 
     "wifi")
         if ! test_root; then
-            echo "run as root" > /dev/stderr
+            echo "run as root" >&2
             exit 1
         fi
 
         if ! test_interface "$WIFI_INT"; then
-            echo "interface $WIFI_INT does not exist" > /dev/stderr
+            echo "interface $WIFI_INT does not exist" >&2
             exit 1
         fi
 
@@ -186,7 +183,7 @@ case $1 in
                 config="$CONNECTIONS_PATH/${safe}.conf"
 
                 if [ ! -f "$config" ]; then
-                    echo "config $config does not exist" > /dev/stderr
+                    echo "config $config does not exist" >&2
                     exit 1
                 fi
 
@@ -197,14 +194,14 @@ case $1 in
                 wpa_supplicant -B -i "$WIFI_INT" -c "$config" > /dev/null
 
                 if ! test_wifi "$WIFI_INT" "$con"; then
-                    echo "does not set connection to $con" > /dev/stderr
+                    echo "does not set connection to $con" >&2
                     exit 1
                 fi
 
                 dhclient "$WIFI_INT"
 
                 if ! test_ip "$WIFI_INT"; then
-                    echo "does not set ip" > /dev/stderr
+                    echo "does not set ip" >&2
                     exit 1
                 fi
 
@@ -224,7 +221,7 @@ case $1 in
             "w")
 
                 if [ "$#" -ne 4 ]; then
-                    echo "net wifi w <ssid> <password>" > /dev/stderr
+                    echo "net wifi w <ssid> <password>" >&2
 
                     exit 1
                 fi
