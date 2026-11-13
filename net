@@ -28,6 +28,7 @@ test_interface() {
 }
 
 test_ip() {
+    local ip
     ip=$(ip -4 -br addr show dev "$1" | awk '{print $3}')
 
     if [ -z "$ip" ]; then
@@ -44,7 +45,8 @@ test_connect() {
 }
 
 test_vpn() {
-    try=0
+    local try=0
+    local ip
 
     while [ "$try" -lt 3 ] && [ "$ip" != "$VPN_IP" ]
     do
@@ -60,7 +62,8 @@ test_vpn() {
 }
 
 test_wifi() {
-    try=0
+    local try=0
+    local ssid
 
     while [ "$try" -lt 10 ] && [ -z "$ssid" ]
     do
@@ -130,6 +133,8 @@ case $1 in
                     echo "does not set ip" >&2
                     exit 1
                 fi
+
+                echo "wire connect done"
 
                 ;;
             
