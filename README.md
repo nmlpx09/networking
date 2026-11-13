@@ -4,6 +4,9 @@ A minimal network management script (`net`) for wired and WiFi interfaces,
 with optional MAC randomization and VPN status detection. Designed to run
 without NetworkManager.
 
+Written in POSIX `sh` (shebang `#!/bin/sh`) — no bash required. Runs under
+`dash`, `ash`, `busybox sh`, and any POSIX-compliant shell.
+
 # requirements
 
 The `net` script depends on the following tools. Most ship with a base Debian/
@@ -28,7 +31,7 @@ Ubuntu install or are one `apt install` away.
 | # | package     | binary used    | purpose                                  |
 |---|-------------|----------------|------------------------------------------|
 | 10| macchanger  | `macchanger`   | MAC randomization on connect             |
-|   |             |                | (only if `USE_MACCHANGER=1` in net.conf) |
+|   |             |                | (only if `USE_MACCHANGER` is non-zero)   |
 
 ## system services
 
