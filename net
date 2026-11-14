@@ -50,9 +50,7 @@ test_wifi() {
         sleep 1
     done
 
-    if [ -z "$ssid" ] || [ "$ssid" != "$2" ]; then
-        return 1
-    fi
+    [ -n "$ssid" ] && [ "$ssid" = "$2" ]
 }
 
 wire_disconnect() {
