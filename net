@@ -123,9 +123,9 @@ case $1 in
                 echo "wire connect done"
 
                 ;;
-            
+
             "d")
-            
+
                 echo "wire disconnect on $WIRE_INT"
 
                 wire_disconnect "$WIRE_INT"
@@ -133,10 +133,12 @@ case $1 in
                 echo "wire disconnect done"
 
                 ;;
-            
+
             *)
-            
+
                 echo "only c, d commands"
+
+                exit 2
 
                 ;;
         esac
@@ -199,7 +201,7 @@ case $1 in
                 echo "wifi connect done"
 
                 ;;
-            
+
             "d")
                 echo "wifi disconnect on $WIFI_INT"
 
@@ -219,21 +221,23 @@ case $1 in
 
                 safe=$(sanitize_ssid "$3")
 
-                wpa_passphrase "$3" "$4" | grep -v -E '^[[:space:]]*#psk=' > "$CONNECTIONS_PATH/${safe}.conf"
+                printf '%s\n' "$4" | wpa_passphrase "$3" | grep -v -E '^[[:space:]]*#psk=' > "$CONNECTIONS_PATH/${safe}.conf"
                 chmod 600 "$CONNECTIONS_PATH/${safe}.conf"
 
                 ;;
 
             "l")
-                
+
                 echo "wifi list ssid"
 
-                iwlist scan 2> /dev/null | awk -F '"' '/ESSID:"[^"]+"/ {print $2}' | sort -u
+                iwlist "$WIFI_INT" scan 2> /dev/null | awk -F '"' '/ESSID:"[^"]+"/ {print $2}' | sort -u
 
                 ;;
-            
+
             *)
                 echo "only c, d, w, l commands"
+
+                exit 2
 
                 ;;
         esac
@@ -307,7 +311,9 @@ case $1 in
 
                 echo "only c, d commands"
 
-            ;;
+                exit 2
+
+                ;;
 
         esac
 
@@ -315,6 +321,8 @@ case $1 in
 
     *)
         echo "only wire, wifi, status, stats, vpn"
+
+        exit 2
 
         ;;
 esac
