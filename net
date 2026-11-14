@@ -62,11 +62,15 @@ test_wifi() {
 }
 
 wire_disconnect() {
+    eval "$VPN_DISCONNECT_COMMAND" > /dev/null 2>&1
+
     dhclient -r "$1" > /dev/null 2>&1
 }
 
 wifi_disconnect() {
     pkill -f "wpa_supplicant.*$1"
+
+    eval "$VPN_DISCONNECT_COMMAND" > /dev/null 2>&1
 
     dhclient -r "$1" > /dev/null 2>&1
 }
