@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -eu
 
 CONFIG_FILE="${NET_CONF:-/net/net.conf}"
 
@@ -41,7 +41,7 @@ test_vpn() {
 
 test_wifi() {
     local try=0
-    local ssid
+    local ssid=""
 
     while [ "$try" -lt 10 ] && [ -z "$ssid" ]
     do
