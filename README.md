@@ -16,21 +16,20 @@ Ubuntu install or are one `apt install` away.
 
 | # | package            | binary used            | purpose                                  |
 |---|--------------------|------------------------|------------------------------------------|
-| 1 | iproute2           | `ip`                   | interface up/down, address queries       |
+| 1 | iproute2           | `ip`                   | interface up/down, address + route queries |
 | 2 | isc-dhcp-client    | `dhclient`             | obtain/release IPv4 leases               |
-| 3 | traceroute         | `traceroute`           | VPN gateway detection (`net status`)     |
-| 4 | iputils-ping       | `ping`                 | connectivity check + `net stats` latency |
-| 5 | wpasupplicant      | `wpa_supplicant`       | WiFi association                         |
-| 6 | wpasupplicant      | `wpa_passphrase`       | generate wpa_supplicant configs (`wifi w`)|
-| 7 | iw                 | `iw`                   | query current WiFi link / SSID           |
-| 8 | wireless-tools     | `iwlist`               | `wifi l` scan for nearby SSIDs           |
-| 9 | procps             | `pkill`                | stop wpa_supplicant on disconnect        |
+| 3 | iputils-ping       | `ping`                 | connectivity check + `net stats` latency |
+| 4 | wpasupplicant      | `wpa_supplicant`       | WiFi association                         |
+| 5 | wpasupplicant      | `wpa_passphrase`       | generate wpa_supplicant configs (`wifi w`)|
+| 6 | iw                 | `iw`                   | query current WiFi link / SSID           |
+| 7 | wireless-tools     | `iwlist`               | `wifi l` scan for nearby SSIDs           |
+| 8 | procps             | `pkill`                | stop wpa_supplicant on disconnect        |
 
 ## optional (required only if feature enabled)
 
 | # | package     | binary used    | purpose                                  |
 |---|-------------|----------------|------------------------------------------|
-| 10| macchanger  | `macchanger`   | MAC randomization on connect             |
+| 9 | macchanger  | `macchanger`   | MAC randomization on connect             |
 |   |             |                | (only if `USE_MACCHANGER` is non-zero)   |
 
 ## system services
@@ -46,7 +45,6 @@ Ubuntu install or are one `apt install` away.
 sudo apt install \
     iproute2 \
     isc-dhcp-client \
-    traceroute \
     iputils-ping \
     wpasupplicant \
     iw \
@@ -102,6 +100,7 @@ net wifi c [ssid]            # connect WiFi (default: $WIFI_CON from net.conf)
 net wifi d                   # disconnect WiFi
 net wifi w <ssid> <password> # write a wpa_supplicant config for <ssid>
 net wifi l                   # list nearby SSIDs
+net vpn c|d                  # connect / disconnect VPN (runs $VPN_*_COMMAND)
 net status                   # print connectivity (see table below)
 net stats                    # print packet loss and latency to $TEST_IP
 ```
@@ -113,8 +112,8 @@ Single character on stdout:
 | output | meaning                                            |
 |--------|----------------------------------------------------|
 | `n`    | no connectivity (cannot reach `$TEST_IP`)          |
-| `c`    | connected, but VPN not active (gateway != `$VPN_IP`) |
-| `v`    | connected and VPN active                            |
+| `c`    | connected, but route to `$TEST_IP` does not use `$VPN_INT` (VPN not active) |
+| `v`    | connected and route to `$TEST_IP` uses `$VPN_INT` (VPN active) |
 
 Run as root:
 ```bash
