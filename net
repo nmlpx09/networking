@@ -60,7 +60,7 @@ wire_disconnect() {
 }
 
 wifi_disconnect() {
-    pkill -f "wpa_supplicant.*$1"
+    pkill -f "wpa_supplicant.*$1" || :
 
     eval "$VPN_DISCONNECT_COMMAND" > /dev/null 2>&1 || :
 
