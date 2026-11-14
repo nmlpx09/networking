@@ -14,17 +14,13 @@ fi
 CONNECTIONS_PATH="$NET_HOME/$CONNECTIONS"
 
 test_root() {
-    if [ $(id -u) -ne 0 ]; then
+    if [ "$(id -u)" -ne 0 ]; then
         return 1
     fi
-
-    return 0
 }
 
 test_interface() {
     ip link show "$1" > /dev/null || return 1
-
-    return 0
 }
 
 test_ip() {
@@ -34,31 +30,19 @@ test_ip() {
     if [ -z "$ip" ]; then
         return 1
     fi
-
-    return 0
 }
 
 test_connect() {
     ping -c 1 -W 1 "$TEST_IP" > /dev/null 2>&1 || return 1
-
-    return 0
 }
 
 test_vpn() {
-    local try=0
-    local ip
+    local dev
+    dev=$(ip -o route get "$TEST_IP" | awk '{for(i=1; i<=NF; i++) if($i=="dev") print $(i+1); exit}')
 
-    while [ "$try" -lt 3 ] && [ "$ip" != "$VPN_IP" ]
-    do
-        ip=$(traceroute -w 1 -m 1 "$TEST_IP" | tail -1 | awk '{print $2}')
-        try=$((try + 1))
-    done
-
-    if [ "$ip" = "$VPN_IP" ]; then
-        return 0
+    if [ "$dev" != "$VPN_INT" ]; then
+        return 1
     fi
-
-    return 1
 }
 
 test_wifi() {
@@ -75,8 +59,6 @@ test_wifi() {
     if [ -z "$ssid" ] || [ "$ssid" != "$2" ]; then
         return 1
     fi
-
-    return 0
 }
 
 wire_disconnect() {
@@ -117,7 +99,7 @@ case $1 in
         case $2 in
             "c")
                 if test_ip "$WIRE_INT"; then
-                    echo "wire connect on $WIRE_INT"
+                    echo "wire already connect on $WIRE_INT"
                     exit 0
                 fi
 
@@ -171,7 +153,7 @@ case $1 in
             "c")
 
                 if test_ip "$WIFI_INT"; then
-                    echo "wifi connect on $WIFI_INT"
+                    echo "wifi already connect on $WIFI_INT"
                     exit 0
                 fi
 
@@ -279,8 +261,56 @@ case $1 in
         ping -q -c 10 "$TEST_IP" | awk -F '[ /]' '/loss/ {loss=$6} /rtt/ {avg=$8} END {print loss,avg}'
 
         ;;
+
+    "vpn")
+
+        if ! test_root; then
+            echo "run as root" >&2
+            exit 1
+        fi
+
+        case $2 in
+            "c")
+                if test_vpn; then
+                    echo "vpn already connect"
+                    exit 0
+                fi
+
+                echo "vpn connect"
+
+                eval "$VPN_CONNECT_COMMAND"
+
+                if ! test_vpn; then
+                    echo "does not connect vpn" >&2
+                    eval "$VPN_DISCONNECT_COMMAND"
+                    exit 1
+                fi
+
+                echo "vpn connect done"
+
+                ;;
+
+            "d")
+                echo "vpn disconnect"
+
+                eval "$VPN_DISCONNECT_COMMAND"
+
+                echo "vpn disconnect done"
+
+                ;;
+
+            *)
+
+                echo "only c, d commands"
+
+            ;;
+
+        esac
+
+        ;;
+
     *)
-        echo "only wire, wifi, status, stats"
+        echo "only wire, wifi, status, stats, vpn"
 
         ;;
 esac
