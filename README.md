@@ -79,11 +79,6 @@ sudo install -m 600 -o root -g root configs/net.conf /net/net.conf
 ```
 (`0600` because the script sources it as root.)
 
-Override the path per-invocation via `NET_CONF`:
-```bash
-NET_CONF=/tmp/test.conf sudo -E ./net wifi c
-```
-
 ## /net/connections/
 
 `wifi w` writes `wpa_supplicant` configs here as `<sanitized-ssid>.conf`,
