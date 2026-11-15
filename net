@@ -87,7 +87,10 @@ wifi_disconnect() {
 mac_change() {
     ip link set "$1" down
 
-    macchanger -r "$1" > /dev/null
+    macchanger -r "$1" > /dev/null || {
+        ip link set "$1" up || :
+        return 1
+    }
 
     ip link set "$1" up
 }
@@ -124,7 +127,7 @@ case "${1:-}" in
                     mac_change "$WIRE_INT"
                 fi
 
-                dhclient "$WIRE_INT"
+                dhclient "$WIRE_INT" || :
 
                 if ! test_ip "$WIRE_INT"; then
                     echo "does not set ip" >&2
@@ -197,14 +200,14 @@ case "${1:-}" in
                     mac_change "$WIFI_INT"
                 fi
 
-                wpa_supplicant -B -i "$WIFI_INT" -c "$config" > /dev/null
+                wpa_supplicant -B -i "$WIFI_INT" -c "$config" > /dev/null || :
 
                 if ! test_wifi "$WIFI_INT" "$con"; then
                     echo "does not set connection to $con" >&2
                     exit 1
                 fi
 
-                dhclient "$WIFI_INT"
+                dhclient "$WIFI_INT" || :
 
                 if ! test_ip "$WIFI_INT"; then
                     echo "does not set ip" >&2
@@ -301,7 +304,7 @@ case "${1:-}" in
 
                 echo "vpn connect"
 
-                eval "$VPN_CONNECT_COMMAND"
+                eval "$VPN_CONNECT_COMMAND" || :
 
                 if ! test_vpn; then
                     echo "does not connect vpn" >&2
