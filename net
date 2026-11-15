@@ -96,7 +96,7 @@ sanitize_ssid() {
     printf '%s' "$1" | tr -c 'A-Za-z0-9 _-' '_'
 }
 
-case $1 in
+case "${1:-}" in
     "wire")
 
         if ! test_root; then
@@ -109,7 +109,7 @@ case $1 in
             exit 1
         fi
 
-        case $2 in
+        case "${2:-}" in
             "c")
                 if test_ip "$WIRE_INT"; then
                     echo "wire already connect on $WIRE_INT"
@@ -166,7 +166,7 @@ case $1 in
             exit 1
         fi
 
-        case $2 in
+        case "${2:-}" in
             "c")
 
                 if test_ip "$WIFI_INT"; then
@@ -226,15 +226,17 @@ case $1 in
 
             "w")
 
-                if [ "$#" -ne 4 ]; then
-                    echo "net wifi w <ssid> <password>" >&2
-
-                    exit 1
+                if [ "$#" -ne 3 ]; then
+                    echo "net wifi w <ssid>" >&2
+                    exit 2
                 fi
+
+                printf 'password: ' >&2
+                read -r pass
 
                 safe=$(sanitize_ssid "$3")
 
-                printf '%s\n' "$4" | wpa_passphrase "$3" | grep -v -E '^[[:space:]]*#psk=' > "$CONNECTIONS_PATH/${safe}.conf"
+                printf '%s\n' "$pass" | wpa_passphrase "$3" | grep -v -E '^[[:space:]]*#psk=' > "$CONNECTIONS_PATH/${safe}.conf"
                 chmod 600 "$CONNECTIONS_PATH/${safe}.conf"
 
                 ;;
@@ -290,7 +292,7 @@ case $1 in
             exit 1
         fi
 
-        case $2 in
+        case "${2:-}" in
             "c")
                 if test_vpn; then
                     echo "vpn already connect"
